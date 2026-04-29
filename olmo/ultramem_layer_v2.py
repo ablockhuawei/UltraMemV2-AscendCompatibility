@@ -483,7 +483,7 @@ class UltraMemLayerV2(torch.nn.Module):
         return concated_output[0:entry_num]
 
     def ImplicitValueExpansion(self, best_scores, best_indice, pre_input, all_value_num, value_num, offset):
-        if True:
+        if False:
             from fuse_ops.fused_index import XperfGlu, FusedLookup
             if pre_input is not None:
                 pre_score = XperfGlu.apply(best_indice.to(torch.int32), self.pre_values_for_look_up, pre_input, all_value_num, value_num, offset, 1, 0, False)
@@ -512,8 +512,8 @@ class UltraMemLayerV2(torch.nn.Module):
 
             if self.value_expand_time == 1:
                 output = values.sum(dim=1)
-            else:
-                from fuse_ops.scatter_add import ScatterAdd
-                output = ScatterAdd.apply(group_indice, values, self.value_expand_time)
+            # else:
+            #     from fuse_ops.scatter_add import ScatterAdd
+            #     output = ScatterAdd.apply(group_indice, values, self.value_expand_time)
             output = output.view(bs, -1)
         return output
