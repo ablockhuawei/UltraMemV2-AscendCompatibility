@@ -1066,7 +1066,7 @@ class BeamSearch:
             if state_tensor is None:
                 continue
             _, *last_dims = state_tensor.size()
-            state[key] = state_tensor.index_select(0, (backpointer + backpointer.shape[1]*torch.arange(backpointer.shape[0], device=backpointer.device).unsqueeze(1)).flatten())
+            state[key] = state_tensor.index_select(0, (backpointer + backpointer.shape[1]*torch.arange(backpointer.shape[0], device=backpointer.device).unsqueeze(1)).flatten())  # FIX: Use index_select instead of gather to avoid hang (index_select is faster than gather)
             # # shape: (batch_size, beam_size, *)
             # expanded_backpointer = backpointer.view(batch_size, self.beam_size, *([1] * len(last_dims))).expand(
             #     batch_size, self.beam_size, *last_dims
