@@ -305,7 +305,8 @@ class UltraMemLayerV2(torch.nn.Module):
         qtr = self.tucker_rank if self.mem_q_for_each_tucker_rank else 1
         query = query.view(bs, 2, qtr, self.kdim)             # output shape: [bs, 2, kdim]
         query = self.query_norm(query)
-        query = query.view(bs, qtr, 2*self.kdim)
+        query = query.view(bs, qtr, 2*self.kdim)  # FIX: the last dimension is the dimension that is split to produce the row- and the column-queries in the ParallelKeyQueryInnerProuct function, not the middle dimension
+        # In the ParallelKeyQueryInnerProduct function, we have the line "q2 = query[:, i // nhead_share_query, half:]", with half defined as "half = k_dim//2" and k_dim defined as "k_dim = query.shape[-1]"
 
         keys = self.keys_norm(self.keys.transpose(3,4)).transpose(3,4)
 
@@ -484,7 +485,7 @@ class UltraMemLayerV2(torch.nn.Module):
         return concated_output[0:entry_num]
 
     def ImplicitValueExpansion(self, best_scores, best_indice, pre_input, all_value_num, value_num, offset):
-        if False:
+        if False:  # FIX: CUDA kernels do not work on Ascend
             from fuse_ops.fused_index import XperfGlu, FusedLookup
             if pre_input is not None:
                 pre_score = XperfGlu.apply(best_indice.to(torch.int32), self.pre_values_for_look_up, pre_input, all_value_num, value_num, offset, 1, 0, False)
@@ -513,7 +514,7 @@ class UltraMemLayerV2(torch.nn.Module):
 
             if self.value_expand_time == 1:
                 output = values.sum(dim=1)
-            # else:
+            # else:  # FIX: CUDA kernels do not work on Ascend
             #     from fuse_ops.scatter_add import ScatterAdd
             #     output = ScatterAdd.apply(group_indice, values, self.value_expand_time)
             output = output.view(bs, -1)
