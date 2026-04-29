@@ -373,8 +373,9 @@ class UltraMemLayerV2(torch.nn.Module):
         scores1 = (scores1_refine * self.tucker_core_u).sum(-1)#.detach()
         scores2 = (scores2_refine * self.tucker_core_v).sum(-1)#.detach()
 
-        scores1_chosen, indices1 = scores1.topk(self.knn, dim=2, largest=True, sorted=True)
-        scores2_chosen, indices2 = scores2.topk(self.knn, dim=2, largest=True, sorted=True)
+        rowcol_knn = min(128, self.knn)  # FIX: The paper claims "We constrain row/column TopM to 128 to avoid quadratic intermediate variable explosion."
+        scores1_chosen, indices1 = scores1.topk(rowcol_knn, dim=2, largest=True, sorted=True)
+        scores2_chosen, indices2 = scores2.topk(rowcol_knn, dim=2, largest=True, sorted=True)
 
 
         # blc loss
@@ -406,8 +407,8 @@ class UltraMemLayerV2(torch.nn.Module):
         all_scores = torch.stack(score_list, dim=-1).sum(dim=-1)
 
         all_indices = (
-            indices1.view(bs, head_num, self.knn, 1).expand(bs, head_num, self.knn, self.knn) * n_keys +
-            indices2.view(bs, head_num, 1, self.knn).expand(bs, head_num, self.knn, self.knn)
+            indices1.view(bs, head_num, rowcol_knn, 1).expand(bs, head_num, rowcol_knn, rowcol_knn) * n_keys +
+            indices2.view(bs, head_num, 1, rowcol_knn).expand(bs, head_num, rowcol_knn, rowcol_knn)
         ).view(bs, head_num, -1)
         scores, best_indices = torch.topk(all_scores, k=self.knn, dim=2, largest=True, sorted=True)
 
