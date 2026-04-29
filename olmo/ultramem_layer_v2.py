@@ -305,7 +305,7 @@ class UltraMemLayerV2(torch.nn.Module):
         qtr = self.tucker_rank if self.mem_q_for_each_tucker_rank else 1
         query = query.view(bs, 2, qtr, self.kdim)             # output shape: [bs, 2, kdim]
         query = self.query_norm(query)
-        query = query.view(bs, 2, qtr*self.kdim)
+        query = query.view(bs, qtr, 2*self.kdim)
 
         keys = self.keys_norm(self.keys.transpose(3,4)).transpose(3,4)
 
